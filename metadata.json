@@ -1,0 +1,6 @@
+{
+  "name": "TVG Wealth Engine",
+  "description": "Plataforma Inteligente de Controle Financeiro e Investimentos com Copiloto IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
