@@ -385,7 +385,7 @@ export const BankConnectionsView: React.FC<BankConnectionsViewProps> = ({
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              O <strong className="text-emerald-400">TVG Wealth Engine</strong> opera estritamente sob as diretrizes de Open Finance e LGPD (Lei Geral de Proteção de Dados):
+              O <strong className="text-emerald-400">TVG INVESTMENT</strong> opera estritamente sob as diretrizes de Open Finance e LGPD (Lei Geral de Proteção de Dados):
             </p>
 
             <div className="space-y-3 text-xs">

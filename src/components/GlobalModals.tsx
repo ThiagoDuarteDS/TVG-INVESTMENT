@@ -263,7 +263,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <TVGLogo size="sm" />
-            <h3 className="font-bold text-slate-100 text-sm sm:text-base">Bem-vindo à TVG Wealth Engine</h3>
+            <h3 className="font-bold text-slate-100 text-sm sm:text-base">Bem-vindo à TVG INVESTMENT</h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200">
             <X className="w-4 h-4" />

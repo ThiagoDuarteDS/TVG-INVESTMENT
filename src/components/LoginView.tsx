@@ -94,7 +94,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <header className="relative z-10 w-full px-6 py-4 flex items-center justify-between max-w-7xl mx-auto text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-slate-300 font-medium">TVG Wealth Engine</span>
+          <span className="text-slate-300 font-medium">TVG INVESTMENT</span>
         </div>
         <div className="flex items-center gap-4 hidden sm:flex">
           <span className="flex items-center gap-1.5 text-slate-400">
@@ -109,14 +109,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
         <div className="w-full max-w-md sm:max-w-lg flex flex-col items-center">
           {/* 
-            LOGO TVG WEALTH ENGINE — GRANDE E BRANCA
+            LOGO TVG INVESTMENT — GRANDE E BRANCA
             Centralizada horizontalmente, na parte superior da tela, perfeitamente legível,
             com bastante destaque e integrada diretamente ao fundo do projeto (sem fundo branco artificial).
           */}
           <div className="w-full flex justify-center mb-6 sm:mb-8 text-center">
             <TVGLogo
               size="login"
-              alt="TVG Wealth Engine"
+              alt="TVG INVESTMENT"
               className="hover:scale-[1.01] transition-transform duration-300"
             />
           </div>
@@ -130,7 +130,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {mode === 'login' && (
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-100 text-center mb-6 sm:mb-8">
-                  Bem-vindo à TVG Wealth Engine
+                  Bem-vindo à TVG INVESTMENT
                 </h1>
 
                 {/* Formulário de Login */}
@@ -438,7 +438,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
       {/* Rodapé institucional */}
       <footer className="relative z-10 w-full py-4 text-center text-[11px] text-slate-500 max-w-7xl mx-auto px-6">
-        © 2026 TVG Wealth Engine. Todos os direitos reservados.
+        © 2026 TVG INVESTMENT. Todos os direitos reservados.
       </footer>
     </div>
   );

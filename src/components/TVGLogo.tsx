@@ -12,7 +12,7 @@ interface TVGLogoProps {
 export const TVGLogo: React.FC<TVGLogoProps> = ({
   size = 'md',
   className = '',
-  alt = 'TVG Wealth Engine',
+  alt = 'TVG INVESTMENT',
 }) => {
   // Sizing definitions preserving the 1280x698 aspect ratio without distortion
   // Login size is prominent, grand, perfectly legible and centered (Requirements 1, 3, 4 & 5)
@@ -28,7 +28,7 @@ export const TVGLogo: React.FC<TVGLogoProps> = ({
   return (
     <div className={`inline-flex items-center justify-center select-none ${className}`}>
       {/* 
-        Logo oficial TVG Wealth Engine na cor branca, preservando proporções originais
+        Logo oficial TVG INVESTMENT na cor branca, preservando proporções originais
         sem qualquer quadrado branco, card branco ou moldura artificial atrás.
         Integrada diretamente ao fundo.
       */}
