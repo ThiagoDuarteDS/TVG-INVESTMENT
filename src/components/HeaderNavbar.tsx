@@ -60,7 +60,7 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'banks', label: 'Bancos & Contas', icon: Building2 },
     { id: 'budget', label: 'Receitas & Despesas', icon: PieChart },
-    { id: 'goals', label: 'Metas & Planejamento', icon: Target },
+    { id: 'goals', label: 'Metas & Investimentos', icon: Target },
     { id: 'copilot', label: 'Copiloto IA', icon: Sparkles, badge: 'IA' },
     { id: 'simulator', label: 'Simulador', icon: Calculator },
   ];

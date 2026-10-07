@@ -1,5 +1,42 @@
 {
-  "users": [],
-  "sessions": {},
-  "userData": {}
+  "users": [
+    {
+      "id": "usr_d8424328-89fd-4045-b432-7a6b59206427",
+      "name": "Carlos Silva",
+      "email": "carlos@teste.com",
+      "passwordHash": "2986b69bd79d6b1da17f46782c7ab2df579778334521ec87470ef6f6824298b43c7253a5439a35160734773131cc40e44c60b109b880067885a7e1dfe44f0b4a",
+      "salt": "14f3de780dcff83ca0f50a82a25f2459",
+      "createdAt": "2026-10-07T11:40:11.454Z"
+    }
+  ],
+  "sessions": {
+    "sess_b6c5b3d9efa2de4005838f97064c2dc25b189ab32d0781796b2d78029176dd43": {
+      "userId": "usr_d8424328-89fd-4045-b432-7a6b59206427",
+      "createdAt": 1791373211454
+    },
+    "sess_2177433e653b79619737d2b0bb823cf3812aa5aa67bfb0d386cf271e2f6240ed": {
+      "userId": "usr_d8424328-89fd-4045-b432-7a6b59206427",
+      "createdAt": 1791373216907
+    }
+  },
+  "userData": {
+    "usr_d8424328-89fd-4045-b432-7a6b59206427": {
+      "banks": [],
+      "incomes": [],
+      "expenses": [],
+      "goals": [],
+      "transactions": [],
+      "notifications": [
+        {
+          "id": "notif-1791373211454",
+          "type": "achievement",
+          "title": "Bem-vindo à TVG INVESTMENT!",
+          "description": "Sua conta foi criada com segurança. Conecte sua primeira conta ou informe seus dados para começar.",
+          "date": "Hoje",
+          "read": false
+        }
+      ],
+      "updatedAt": "2026-10-07T11:40:11.454Z"
+    }
+  }
 }

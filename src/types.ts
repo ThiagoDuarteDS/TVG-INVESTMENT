@@ -54,15 +54,27 @@ export interface Transaction {
   status: 'confirmado' | 'pendente';
 }
 
+export interface GoalContribution {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+}
+
 export interface FinancialGoal {
   id: string;
   title: string;
   category: 'imovel' | 'veiculo' | 'viagem' | 'reserva' | 'liberdade' | 'aposentadoria' | 'empresa' | 'personalizado';
   targetAmount: number;
-  currentAmount: number;
+  currentAmount: number; // Patrimônio total acumulado nesta meta (Aportes + Rendimentos)
+  totalInvested: number; // Total aportado
+  accumulatedYield: number; // Rendimentos acumulados
   monthlyContribution: number;
   targetMonths: number;
+  initialAmount?: number;
+  investmentStrategy?: string;
   estimatedReturnRate: number; // % annual
+  contributions: GoalContribution[];
   createdAt: string;
   icon: string;
   color: string;

@@ -17,6 +17,7 @@ import {
   ExpenseCategory,
   Transaction,
   FinancialGoal,
+  GoalContribution,
   FinancialHealthScore,
   SmartNotification,
 } from './types';
@@ -138,7 +139,8 @@ export default function App() {
   const savingsRate = totalIncome > 0 ? (availableCash / totalIncome) * 100 : 0;
 
   const totalBankBalances = banks.reduce((acc, curr) => acc + curr.balance, 0);
-  const totalInvestments = banks.reduce((acc, curr) => acc + (curr.investmentsTotal || 0), 0);
+  const totalGoalsAmount = goals.reduce((acc, g) => acc + (g.currentAmount || 0), 0);
+  const totalInvestments = totalGoalsAmount + banks.reduce((acc, curr) => acc + (curr.investmentsTotal || 0), 0);
   const totalWealth = totalBankBalances + totalInvestments;
 
   // Cálculo Dinâmico de Saúde Financeira
@@ -284,6 +286,68 @@ export default function App() {
   const handleUpdateGoalContribution = (id: string, newContribution: number) => {
     setGoals((prev) =>
       prev.map((g) => (g.id === id ? { ...g, monthlyContribution: newContribution } : g))
+    );
+  };
+
+  const handleAddMoneyToGoal = (goalId: string, amount: number, note?: string) => {
+    if (amount <= 0) return;
+    const today = new Date().toLocaleDateString('pt-BR');
+    const newContrib: GoalContribution = {
+      id: `contrib-${Date.now()}`,
+      amount,
+      date: today,
+      note: note || 'Aporte realizado',
+    };
+
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id === goalId) {
+          const newInvested = (g.totalInvested !== undefined ? g.totalInvested : g.currentAmount || 0) + amount;
+          const newCurrent = (g.currentAmount || 0) + amount;
+          return {
+            ...g,
+            currentAmount: newCurrent,
+            totalInvested: newInvested,
+            contributions: [newContrib, ...(g.contributions || [])],
+          };
+        }
+        return g;
+      })
+    );
+
+    const targetGoal = goals.find((g) => g.id === goalId);
+    const notif: SmartNotification = {
+      id: `notif-${Date.now()}`,
+      type: 'achievement',
+      title: `Aporte de R$ ${amount.toLocaleString('pt-BR')} realizado!`,
+      description: `Valor adicionado com sucesso ao seu patrimônio na meta "${targetGoal?.title || 'Investimento'}".`,
+      date: 'Agora',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const handleWithdrawFromGoal = (goalId: string, amount: number) => {
+    if (amount <= 0) return;
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id === goalId) {
+          const newCurrent = Math.max(0, (g.currentAmount || 0) - amount);
+          const newInvested = Math.max(0, (g.totalInvested !== undefined ? g.totalInvested : g.currentAmount || 0) - amount);
+          return {
+            ...g,
+            currentAmount: newCurrent,
+            totalInvested: newInvested,
+          };
+        }
+        return g;
+      })
+    );
+  };
+
+  const handleUpdateGoal = (goalId: string, updatedFields: Partial<FinancialGoal>) => {
+    setGoals((prev) =>
+      prev.map((g) => (g.id === goalId ? { ...g, ...updatedFields } : g))
     );
   };
 
@@ -449,6 +513,9 @@ export default function App() {
             onAddGoal={handleAddGoal}
             onDeleteGoal={handleDeleteGoal}
             onUpdateGoalContribution={handleUpdateGoalContribution}
+            onAddMoneyToGoal={handleAddMoneyToGoal}
+            onWithdrawFromGoal={handleWithdrawFromGoal}
+            onUpdateGoal={handleUpdateGoal}
           />
         )}
 

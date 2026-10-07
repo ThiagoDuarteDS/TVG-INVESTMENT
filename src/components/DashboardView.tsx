@@ -61,7 +61,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const savingsRate = totalIncome > 0 ? ((availableCash / totalIncome) * 100).toFixed(1) : '0';
 
   const totalBankBalances = banks.reduce((acc, curr) => acc + curr.balance, 0);
-  const totalInvestments = banks.reduce((acc, curr) => acc + (curr.investmentsTotal || 0), 0);
+  const totalGoalsWealth = goals.reduce((acc, g) => acc + (g.currentAmount || 0), 0);
+  const totalInvestedInGoals = goals.reduce((acc, g) => acc + (g.totalInvested !== undefined ? g.totalInvested : g.currentAmount || 0), 0);
+  const totalYieldsInGoals = goals.reduce((acc, g) => acc + (g.accumulatedYield || 0), 0);
+  const totalInvestments = totalGoalsWealth + banks.reduce((acc, curr) => acc + (curr.investmentsTotal || 0), 0);
   const totalWealth = totalBankBalances + totalInvestments;
 
   // Top 5 Expenses for Donut and summary list
@@ -198,20 +201,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* 3. Investimentos */}
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all shadow-sm">
+        {/* 3. Investimentos & Metas */}
+        <div
+          onClick={() => onNavigate('goals')}
+          className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900/90 transition-all shadow-sm cursor-pointer group"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Investimentos</span>
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+            <span className="text-xs font-medium group-hover:text-emerald-300 transition-colors">Investimentos & Metas</span>
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
               <PiggyBank className="w-4 h-4" />
             </div>
           </div>
           <div className="text-lg font-bold text-slate-100">
             R$ {totalInvestments.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="mt-1 flex items-center gap-1 text-[11px] text-cyan-400">
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400">
             <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>{banks.filter(b => (b.investmentsTotal || 0) > 0).length} instituições conectadas</span>
+            <span>{goals.length} meta(s) ativas (+R$ {totalYieldsInGoals.toLocaleString('pt-BR')} rendimentos)</span>
           </div>
         </div>
 
@@ -531,7 +537,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
               <p className="text-slate-300 leading-snug">
-                Você gasta <strong>{((2300 / totalIncome) * 100).toFixed(0)}%</strong> com moradia e <strong>{((1450 / totalIncome) * 100).toFixed(0)}%</strong> com alimentação. Seus gastos essenciais estão equilibrados.
+                {totalIncome > 0 ? (
+                  <>
+                    Sua taxa de poupança está em <strong className="text-emerald-400">{savingsRate}%</strong> com margem livre de <strong className="text-emerald-400">R$ {availableCash.toLocaleString('pt-BR')}</strong> para investimentos e metas.
+                  </>
+                ) : (
+                  <>
+                    Cadastre suas receitas e despesas para visualizar o diagnóstico de capacidade de poupança e investimentos.
+                  </>
+                )}
               </p>
             </div>
             <button
