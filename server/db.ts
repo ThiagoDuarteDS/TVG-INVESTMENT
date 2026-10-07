@@ -79,21 +79,29 @@ function hashPassword(password: string, salt: string): string {
   return crypto.scryptSync(password, salt, 64).toString('hex');
 }
 
+function isValidEmailServer(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export function registerUser(name: string, email: string, password: string) {
   const db = ensureDbFile();
   const normalizedEmail = email.trim().toLowerCase();
 
-  if (!normalizedEmail || !password || !name) {
-    throw new Error('Nome, e-mail e senha são obrigatórios.');
+  if (!name.trim()) {
+    throw new Error('Informe seu nome.');
+  }
+
+  if (!normalizedEmail || !isValidEmailServer(normalizedEmail)) {
+    throw new Error('Digite um e-mail válido.');
   }
 
   if (password.length < 6) {
-    throw new Error('A senha deve conter no mínimo 6 caracteres.');
+    throw new Error('A senha precisa ter pelo menos 6 caracteres.');
   }
 
   const existing = db.users.find((u) => u.email === normalizedEmail);
   if (existing) {
-    throw new Error('Este e-mail já está cadastrado no sistema.');
+    throw new Error('Este e-mail já possui uma conta. Tente entrar.');
   }
 
   const salt = crypto.randomBytes(16).toString('hex');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TVGLogo } from './TVGLogo';
-import { authService, UserProfile } from '../services/authService';
+import { authService, UserProfile, isValidEmail, formatAuthError } from '../services/authService';
 import {
   Mail,
   Lock,
@@ -27,12 +27,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
 }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot_password'>('login');
 
-  // Login form states — SEMPRE VAZIOS INICIALMENTE (Requisito 1 de Privacidade)
+  // Login form states — SEMPRE VAZIOS INICIALMENTE (Campos limpos)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Register fields
+  // Register fields — SEMPRE VAZIOS INICIALMENTE
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -54,53 +54,82 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setMode(newMode);
   };
 
-  // Submit Login Real
+  // Submit Login
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!email.trim() || !password) {
-      setErrorMessage('Por favor, informe seu e-mail e senha.');
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMessage('Digite seu e-mail.');
+      return;
+    }
+
+    if (!isValidEmail(cleanEmail)) {
+      setErrorMessage('Digite um e-mail válido.');
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage('Digite sua senha.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await authService.login(email.trim(), password);
+      const res = await authService.login(cleanEmail, password);
       onLoginSuccess(res.user, res.data);
     } catch (err: any) {
-      setErrorMessage(err.message || 'E-mail ou senha incorretos.');
+      setErrorMessage(formatAuthError(err, 'E-mail ou senha incorretos.'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Submit Register Real
+  // Submit Register
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!regName.trim() || !regEmail.trim() || !regPassword) {
-      setErrorMessage('Por favor, preencha todos os campos.');
+    const cleanName = regName.trim();
+    const cleanEmail = regEmail.trim();
+
+    if (!cleanName) {
+      setErrorMessage('Informe seu nome completo.');
       return;
     }
 
-    if (regPassword !== regConfirmPassword) {
-      setErrorMessage('As senhas não coincidem. Por favor, verifique.');
+    if (!cleanEmail) {
+      setErrorMessage('Informe seu e-mail.');
+      return;
+    }
+
+    if (!isValidEmail(cleanEmail)) {
+      setErrorMessage('Digite um e-mail válido.');
+      return;
+    }
+
+    if (!regPassword) {
+      setErrorMessage('Crie uma senha de acesso.');
       return;
     }
 
     if (regPassword.length < 6) {
-      setErrorMessage('A senha deve conter no mínimo 6 caracteres.');
+      setErrorMessage('A senha precisa ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setErrorMessage('As senhas não coincidem.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await authService.register(regName.trim(), regEmail.trim(), regPassword);
+      const res = await authService.register(cleanName, cleanEmail, regPassword);
       onRegisterSuccess(res.user, res.data);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Erro ao realizar cadastro.');
+      setErrorMessage(formatAuthError(err, 'Não foi possível concluir o cadastro. Tente novamente.'));
     } finally {
       setIsLoading(false);
     }
@@ -110,8 +139,9 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!forgotEmail && !email) {
-      setErrorMessage('Por favor, informe o e-mail cadastrado.');
+    const targetEmail = (forgotEmail || email).trim();
+    if (!targetEmail || !isValidEmail(targetEmail)) {
+      setErrorMessage('Digite um e-mail válido para recuperação.');
       return;
     }
     setForgotSent(true);
@@ -138,7 +168,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         }}
       />
 
-      {/* Top subtle status bar */}
+      {/* Top status bar */}
       <header className="relative z-10 w-full px-6 py-4 flex items-center justify-between max-w-7xl mx-auto text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -178,7 +208,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {errorMessage && (
               <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{errorMessage}</span>
+                <span className="font-medium leading-relaxed">{errorMessage}</span>
               </div>
             )}
 
@@ -192,8 +222,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   Acesse sua conta para gerenciar seu patrimônio e investimentos.
                 </p>
 
-                {/* Formulário de Login */}
-                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                {/* Formulário de Login com noValidate para evitar DOMExceptions nativas */}
+                <form noValidate onSubmit={handleLoginSubmit} className="space-y-4">
                   {/* Campo de e-mail: VAZIO por padrão */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -205,7 +235,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </div>
                       <input
                         type="email"
-                        required
                         autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -226,7 +255,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
-                        required
                         autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -236,7 +264,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -253,7 +281,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       {isLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Autenticando...</span>
+                          <span>Entrando...</span>
                         </>
                       ) : (
                         <>
@@ -302,8 +330,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   Tenha seu painel individual e privado na TVG INVESTMENT.
                 </p>
 
-                {/* Formulário de Cadastro */}
-                <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                {/* Formulário de Cadastro com noValidate */}
+                <form noValidate onSubmit={handleRegisterSubmit} className="space-y-4">
                   {/* Campo de nome */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -315,11 +343,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </div>
                       <input
                         type="text"
-                        required
+                        autoComplete="name"
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
                         placeholder="Seu nome completo"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -335,14 +363,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </div>
                       <input
                         type="email"
-                        required
                         autoComplete="email"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
                         placeholder="seu.email@exemplo.com"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
                       />
                     </div>
+                    <span className="block text-[11px] text-slate-500 mt-1">
+                      Aceita e-mails como usuario@gmail.com, usuario@hotmail.com, contato@empresa.com.br
+                    </span>
                   </div>
 
                   {/* Campo de senha */}
@@ -356,17 +386,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </div>
                       <input
                         type={showRegPassword ? 'text' : 'password'}
-                        required
                         autoComplete="new-password"
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
                         placeholder="Mínimo de 6 caracteres"
-                        className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none"
+                        className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegPassword(!showRegPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                       >
                         {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -384,17 +413,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       </div>
                       <input
                         type={showRegConfirmPassword ? 'text' : 'password'}
-                        required
                         autoComplete="new-password"
                         value={regConfirmPassword}
                         onChange={(e) => setRegConfirmPassword(e.target.value)}
                         placeholder="Repita sua senha"
-                        className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none"
+                        className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                       >
                         {showRegConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -449,7 +477,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   Informe seu e-mail cadastrado para redefinir seu acesso.
                 </p>
 
-                <form onSubmit={handleForgotSubmit} className="space-y-4">
+                <form noValidate onSubmit={handleForgotSubmit} className="space-y-4">
                   {forgotSent ? (
                     <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-center space-y-2">
                       <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
@@ -470,11 +498,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
                           </div>
                           <input
                             type="email"
-                            required
                             value={forgotEmail || email}
                             onChange={(e) => setForgotEmail(e.target.value)}
                             placeholder="seu.email@exemplo.com"
-                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 text-slate-100 text-sm focus:outline-none"
+                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 text-slate-100 text-sm focus:outline-none transition-all"
                           />
                         </div>
                       </div>
