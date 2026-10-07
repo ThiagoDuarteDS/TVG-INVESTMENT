@@ -42,7 +42,7 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
   availableCash,
   healthScore,
   notifications,
-  userProfile = { name: 'Thiago G.', email: 'thiago007.org@gmail.com' },
+  userProfile = { name: 'Usuário', email: '' },
   onOpenNewTransaction,
   onOpenNewGoal,
   onOpenConnectBank,

@@ -93,7 +93,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onEnter, onSignUp }) =
         </h1>
 
         <p className="mt-6 text-base sm:text-xl text-slate-400 max-w-2xl leading-relaxed">
-          Esqueça planilhas manuais e gráficos estáticos. O <strong className="text-slate-200">TVG Wealth Engine</strong> conecta seus bancos, organiza receitas e despesas, projeta suas metas e usa inteligência artificial para orientar cada decisão.
+          Esqueça planilhas manuais e gráficos estáticos. A <strong className="text-slate-200">TVG INVESTMENT</strong> conecta seus bancos, organiza receitas e despesas, projeta suas metas e usa inteligência artificial para orientar cada decisão.
         </p>
 
         {/* Primary CTA Buttons */}
@@ -284,7 +284,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onEnter, onSignUp }) =
       <footer className="relative z-10 w-full border-t border-slate-800/60 py-6 text-center text-xs text-slate-500 max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <TVGLogo size="sm" />
-          <span>© 2026 TVG Wealth Engine. Todos os direitos reservados.</span>
+          <span>© 2026 TVG INVESTMENT. Todos os direitos reservados.</span>
         </div>
         <div className="flex items-center gap-4 text-slate-400">
           <span className="hover:text-slate-200 cursor-pointer">Segurança & Privacidade</span>

@@ -136,7 +136,7 @@ export const GoalsPlanningView: React.FC<GoalsPlanningViewProps> = ({
             Metas Financeiras & Objetivos de Vida
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-            Defina seus sonhos e deixe o TVG Wealth Engine traçar o caminho exato para alcançá-los.
+            Defina seus sonhos e deixe a TVG INVESTMENT traçar o caminho exato para alcançá-los.
           </p>
         </div>
 

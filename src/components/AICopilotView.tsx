@@ -38,7 +38,7 @@ export const AICopilotView: React.FC<AICopilotViewProps> = ({
     {
       id: 'msg-1',
       sender: 'assistant',
-      text: 'Olá! Sou o seu Copiloto Financeiro na TVG Wealth Engine. Analisei seus dados e já mapeei sua receita líquida de R$ 11.770, suas 12 categorias de despesas e suas 4 metas ativas. Como posso ajudar você hoje?',
+      text: 'Olá! Sou o seu Copiloto Financeiro na TVG INVESTMENT. Analisei seus dados e estou pronto para apoiar suas decisões financeiras e metas. Como posso ajudar você hoje?',
       timestamp: 'Agora',
       suggestions: [
         'Quanto preciso guardar por mês para comprar meu apartamento em 5 anos?',
@@ -362,7 +362,7 @@ export const AICopilotView: React.FC<AICopilotViewProps> = ({
           </form>
           <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
             <span>Privacidade garantida: seus dados são processados com isolamento seguro</span>
-            <span>TVG Wealth Engine AI v3.8</span>
+            <span>TVG INVESTMENT AI v3.8</span>
           </div>
         </div>
       </div>

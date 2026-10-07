@@ -4,6 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
+import {
+  registerUser,
+  loginUser,
+  getUserByToken,
+  logoutUser,
+  saveUserData,
+} from './server/db.js';
 
 dotenv.config();
 
@@ -15,6 +22,71 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   app.use(express.json());
+
+  // Helper middleware to extract Bearer token
+  const getAuthToken = (req: express.Request): string => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return authHeader.substring(7).trim();
+    }
+    return '';
+  };
+
+  // --- Rotas de Autenticação Real ---
+  app.post('/api/auth/register', (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const result = registerUser(name, email, password);
+      return res.status(201).json(result);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Erro ao registrar usuário' });
+    }
+  });
+
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const result = loginUser(email, password);
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(401).json({ error: err.message || 'Credenciais inválidas' });
+    }
+  });
+
+  app.get('/api/auth/me', (req, res) => {
+    const token = getAuthToken(req);
+    const session = getUserByToken(token);
+    if (!session) {
+      return res.status(401).json({ error: 'Sessão inválida ou expirada' });
+    }
+    return res.json(session);
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    const token = getAuthToken(req);
+    logoutUser(token);
+    return res.json({ success: true });
+  });
+
+  // --- Rotas de Dados Individuais do Usuário ---
+  app.get('/api/user/data', (req, res) => {
+    const token = getAuthToken(req);
+    const session = getUserByToken(token);
+    if (!session) {
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+    return res.json({ data: session.data });
+  });
+
+  app.put('/api/user/data', (req, res) => {
+    const token = getAuthToken(req);
+    const session = getUserByToken(token);
+    if (!session) {
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+    const updated = saveUserData(session.user.id, req.body);
+    return res.json({ success: true, data: updated });
+  });
 
   // Initialize Google GenAI
   let ai: GoogleGenAI | null = null;
@@ -71,7 +143,7 @@ async function startServer() {
     try {
       const { totalIncome, totalExpenses, availableCash, savingsRate, topExpenses, goals, totalWealth } = req.body;
 
-      const prompt = `Você é o Copiloto de Inteligência Financeira da plataforma TVG Wealth Engine.
+      const prompt = `Você é o Copiloto de Inteligência Financeira da plataforma TVG INVESTMENT.
 Analise os dados financeiros deste usuário brasileiro:
 - Receita Mensal: R$ ${totalIncome || 11770}
 - Despesas Mensais: R$ ${totalExpenses || 8355}
@@ -99,7 +171,7 @@ Seja direto, empático e sofisticado.`;
       const housingPct = Math.round((housingExpense / (totalIncome || 11770)) * 100);
       const foodPct = Math.round((foodExpense / (totalIncome || 11770)) * 100);
 
-      const dynamicAnalysis = `Diagnóstico TVG Wealth Engine:
+      const dynamicAnalysis = `Diagnóstico TVG INVESTMENT:
 • Hábitos de Consumo: Sua moradia consome ${housingPct}% da sua renda líquida (dentro do patamar ideal de até 35%). Alimentação e delivery representam ${foodPct}%, com potencial de economia de cerca de R$ 200/mês.
 • Capacidade de Economia: Sua taxa de poupança atual é de ${savingsRate}%, totalizando R$ ${availableCash?.toLocaleString('pt-BR')} de saldo livre mensal.
 • Projeção das Metas: Com seus aportes programados de R$ 2.400/mês distribuídos entre a Reserva de Emergência e a compra do Apartamento, sua reserva será integralmente concluída em menos de 3 meses, liberando R$ 1.000 mensais a mais para acelerar seu patrimônio e a independência financeira.`;
@@ -118,7 +190,7 @@ Seja direto, empático e sofisticado.`;
     try {
       const { message, financialContext } = req.body;
 
-      const systemInstruction = `Você é o Copiloto Financeiro Oficial da TVG Wealth Engine.
+      const systemInstruction = `Você é o Copiloto Financeiro Oficial da TVG INVESTMENT.
 Sua missão é ajudar o usuário a entender, organizar e controlar toda a sua vida financeira, alcançar objetivos e construir riqueza.
 Fale em português do Brasil de forma empática, clara, precisa e amigável.
 DADOS REAIS DO USUÁRIO:
@@ -195,7 +267,7 @@ Você possui excelente saúde financeira (88/100). Seus gastos fixos de moradia 
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`TVG Wealth Engine running on http://localhost:${PORT}`);
+    console.log(`TVG INVESTMENT running on http://localhost:${PORT}`);
   });
 }
 

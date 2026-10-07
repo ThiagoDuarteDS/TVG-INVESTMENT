@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TVGLogo } from './TVGLogo';
+import { authService, UserProfile } from '../services/authService';
 import {
   Mail,
   Lock,
@@ -9,13 +10,15 @@ import {
   ShieldCheck,
   Sparkles,
   CheckCircle2,
+  AlertCircle,
   User,
   Building2,
+  Loader2,
 } from 'lucide-react';
 
 interface LoginViewProps {
-  onLoginSuccess: (userProfile?: { name: string; email: string }) => void;
-  onRegisterSuccess: (userProfile: { name: string; email: string }) => void;
+  onLoginSuccess: (userProfile: UserProfile, userData?: any) => void;
+  onRegisterSuccess: (userProfile: UserProfile, userData?: any) => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
@@ -24,9 +27,9 @@ export const LoginView: React.FC<LoginViewProps> = ({
 }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot_password'>('login');
 
-  // Login form states
-  const [email, setEmail] = useState('thiago007.org@gmail.com');
-  const [password, setPassword] = useState('tvg2026wealth');
+  // Login form states — SEMPRE VAZIOS INICIALMENTE (Requisito 1 de Privacidade)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Register fields
@@ -37,39 +40,84 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
+  // Status & feedback
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   // Forgot password field
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
-  // Submit Login
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onLoginSuccess({
-      name: email.split('@')[0] || 'Usuário',
-      email: email.trim(),
-    });
+  // Alternar modo limpando erros
+  const switchMode = (newMode: 'login' | 'register' | 'forgot_password') => {
+    setErrorMessage('');
+    setMode(newMode);
   };
 
-  // Submit Register
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  // Submit Login Real
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (regPassword !== regConfirmPassword) {
-      alert('As senhas não coincidem. Por favor, verifique.');
+    setErrorMessage('');
+
+    if (!email.trim() || !password) {
+      setErrorMessage('Por favor, informe seu e-mail e senha.');
       return;
     }
-    onRegisterSuccess({
-      name: regName.trim() || 'Usuário',
-      email: regEmail.trim() || 'usuario@tvgwealth.com',
-    });
+
+    setIsLoading(true);
+    try {
+      const res = await authService.login(email.trim(), password);
+      onLoginSuccess(res.user, res.data);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'E-mail ou senha incorretos.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Submit Register Real
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (!regName.trim() || !regEmail.trim() || !regPassword) {
+      setErrorMessage('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setErrorMessage('As senhas não coincidem. Por favor, verifique.');
+      return;
+    }
+
+    if (regPassword.length < 6) {
+      setErrorMessage('A senha deve conter no mínimo 6 caracteres.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await authService.register(regName.trim(), regEmail.trim(), regPassword);
+      onRegisterSuccess(res.user, res.data);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro ao realizar cadastro.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Submit Forgot Password
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+    if (!forgotEmail && !email) {
+      setErrorMessage('Por favor, informe o e-mail cadastrado.');
+      return;
+    }
     setForgotSent(true);
     setTimeout(() => {
       setForgotSent(false);
-      setMode('login');
+      switchMode('login');
     }, 2800);
   };
 
@@ -94,7 +142,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <header className="relative z-10 w-full px-6 py-4 flex items-center justify-between max-w-7xl mx-auto text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-slate-300 font-medium">TVG INVESTMENT</span>
+          <span className="text-slate-300 font-medium tracking-wide">TVG INVESTMENT</span>
         </div>
         <div className="flex items-center gap-4 hidden sm:flex">
           <span className="flex items-center gap-1.5 text-slate-400">
@@ -109,9 +157,9 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
         <div className="w-full max-w-md sm:max-w-lg flex flex-col items-center">
           {/* 
-            LOGO TVG INVESTMENT — GRANDE E BRANCA
-            Centralizada horizontalmente, na parte superior da tela, perfeitamente legível,
-            com bastante destaque e integrada diretamente ao fundo do projeto (sem fundo branco artificial).
+            LOGO OFICIAL TVG INVESTMENT — GRANDE, BRANCA, CENTRALIZADA
+            Integrada diretamente ao fundo sem nenhum fundo branco artificial,
+            quadrado branco, moldura ou card por trás.
           */}
           <div className="w-full flex justify-center mb-6 sm:mb-8 text-center">
             <TVGLogo
@@ -126,16 +174,27 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* Top decorative glow accent */}
             <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/80 to-transparent" />
 
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* 1. TELA DE LOGIN */}
             {mode === 'login' && (
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-100 text-center mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-100 text-center mb-2">
                   Bem-vindo à TVG INVESTMENT
                 </h1>
+                <p className="text-xs sm:text-sm text-slate-400 text-center mb-6 sm:mb-8">
+                  Acesse sua conta para gerenciar seu patrimônio e investimentos.
+                </p>
 
                 {/* Formulário de Login */}
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
-                  {/* Campo de e-mail */}
+                  {/* Campo de e-mail: VAZIO por padrão */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                       E-mail
@@ -147,6 +206,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       <input
                         type="email"
                         required
+                        autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="seu.email@exemplo.com"
@@ -155,7 +215,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Campo de senha */}
+                  {/* Campo de senha: VAZIO por padrão */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                       Senha
@@ -167,6 +227,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
+                        autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
@@ -186,10 +247,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99]"
+                      disabled={isLoading}
+                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:to-emerald-300 disabled:opacity-60 text-slate-950 shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99] cursor-pointer"
                     >
-                      <span>Entrar</span>
-                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Autenticando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Entrar</span>
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -197,8 +268,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <div className="text-center pt-1">
                     <button
                       type="button"
-                      onClick={() => setMode('forgot_password')}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                      onClick={() => switchMode('forgot_password')}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors cursor-pointer"
                     >
                       Esqueceu sua senha?
                     </button>
@@ -210,8 +281,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       Ainda não possui uma conta?{' '}
                       <button
                         type="button"
-                        onClick={() => setMode('register')}
-                        className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors ml-1"
+                        onClick={() => switchMode('register')}
+                        className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors ml-1 cursor-pointer"
                       >
                         Criar conta
                       </button>
@@ -224,9 +295,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* 2. TELA DE CADASTRO (CRIAR CONTA) */}
             {mode === 'register' && (
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-100 text-center mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-100 text-center mb-2">
                   Crie sua conta
                 </h1>
+                <p className="text-xs sm:text-sm text-slate-400 text-center mb-6 sm:mb-8">
+                  Tenha seu painel individual e privado na TVG INVESTMENT.
+                </p>
 
                 {/* Formulário de Cadastro */}
                 <form onSubmit={handleRegisterSubmit} className="space-y-4">
@@ -262,6 +336,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       <input
                         type="email"
                         required
+                        autoComplete="email"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
                         placeholder="seu.email@exemplo.com"
@@ -282,9 +357,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       <input
                         type={showRegPassword ? 'text' : 'password'}
                         required
+                        autoComplete="new-password"
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="Crie uma senha segura"
+                        placeholder="Mínimo de 6 caracteres"
                         className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 text-slate-100 placeholder-slate-500 text-sm focus:outline-none"
                       />
                       <button
@@ -309,6 +385,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       <input
                         type={showRegConfirmPassword ? 'text' : 'password'}
                         required
+                        autoComplete="new-password"
                         value={regConfirmPassword}
                         onChange={(e) => setRegConfirmPassword(e.target.value)}
                         placeholder="Repita sua senha"
@@ -328,10 +405,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99]"
+                      disabled={isLoading}
+                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:to-emerald-300 disabled:opacity-60 text-slate-950 shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99] cursor-pointer"
                     >
-                      <span>Criar conta</span>
-                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Criando conta...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Criar conta</span>
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -341,8 +428,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       Já possui uma conta?{' '}
                       <button
                         type="button"
-                        onClick={() => setMode('login')}
-                        className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors ml-1"
+                        onClick={() => switchMode('login')}
+                        className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors ml-1 cursor-pointer"
                       >
                         Entrar
                       </button>
@@ -394,7 +481,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
                       <button
                         type="submit"
-                        className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <span>Enviar link de recuperação</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
@@ -405,8 +492,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <div className="pt-3 border-t border-slate-800 text-center">
                     <button
                       type="button"
-                      onClick={() => setMode('login')}
-                      className="text-xs text-slate-400 hover:text-slate-200 font-medium transition-colors"
+                      onClick={() => switchMode('login')}
+                      className="text-xs text-slate-400 hover:text-slate-200 font-medium transition-colors cursor-pointer"
                     >
                       ← Voltar para o Login
                     </button>

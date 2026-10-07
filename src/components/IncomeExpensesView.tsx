@@ -125,7 +125,7 @@ export const IncomeExpensesView: React.FC<IncomeExpensesViewProps> = ({
               Cadastro da Situação Financeira
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-              Informe ou ajuste suas receitas e despesas. O TVG Wealth Engine calcula automaticamente seu saldo e capacidade de economia.
+              Informe ou ajuste suas receitas e despesas. A TVG INVESTMENT calcula automaticamente seu saldo e capacidade de economia.
             </p>
           </div>
         </div>

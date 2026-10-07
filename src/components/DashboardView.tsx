@@ -130,6 +130,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {/* Onboarding Guide Banner for Fresh Accounts */}
+      {banks.length === 0 && incomes.length === 0 && (
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-500/30 shadow-xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Primeiros Passos na TVG INVESTMENT</span>
+              </div>
+              <h2 className="text-lg font-bold text-white">Sua conta individual foi inicializada com sucesso!</h2>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+                Seus dados são 100% privados e isolados. Para começar a aproveitar as análises em tempo real e o Copiloto IA, conecte seu primeiro banco ou cadastre suas receitas e metas.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              <button
+                onClick={() => onNavigate('banks')}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/20"
+              >
+                <span>Conectar Banco</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onNavigate('budget')}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Cadastrar Orçamento</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 6 Key Performance Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
         {/* 1. Receita Mensal */}
@@ -141,11 +174,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="text-lg font-bold text-slate-100">
-            R$ {totalIncome.toLocaleString('pt-BR')}
+            R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400">
             <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>+R$ 1.800 de extras</span>
+            <span>{incomes.length} fontes registradas</span>
           </div>
         </div>
 
@@ -158,10 +191,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="text-lg font-bold text-slate-100">
-            R$ {totalExpenses.toLocaleString('pt-BR')}
+            R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
-            <span>Dentro do limite planejado</span>
+            <span>{expenses.length} categorias cadastradas</span>
           </div>
         </div>
 
@@ -174,11 +207,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="text-lg font-bold text-slate-100">
-            R$ {totalInvestments.toLocaleString('pt-BR')}
+            R$ {totalInvestments.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-cyan-400">
             <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>+1.12% no mês (XP + BTG)</span>
+            <span>{banks.filter(b => (b.investmentsTotal || 0) > 0).length} instituições conectadas</span>
           </div>
         </div>
 
@@ -191,14 +224,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="text-lg font-bold text-emerald-400">
-            R$ {availableCash.toLocaleString('pt-BR')}
+            R$ {availableCash.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="mt-1 text-[11px] text-emerald-300/80">
             {savingsRate}% da sua renda líquida
           </div>
         </div>
 
-        {/* 5. Economia Mensal */}
+        {/* 5. Aporte Planejado */}
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-medium">Aporte Planejado</span>
@@ -207,10 +240,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="text-lg font-bold text-slate-100">
-            R$ 2.400,00
+            R$ {goals.reduce((acc, g) => acc + (g.monthlyContribution || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="mt-1 text-[11px] text-amber-400">
-            Alocado nas 4 metas ativas
+            {goals.length} {goals.length === 1 ? 'meta ativa' : 'metas ativas'}
           </div>
         </div>
 
@@ -223,11 +256,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="text-lg font-bold text-slate-100">
-            R$ {totalWealth.toLocaleString('pt-BR')}
+            R$ {totalWealth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-purple-400">
             <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>+14.8% no último ano</span>
+            <span>Patrimônio consolidado</span>
           </div>
         </div>
       </div>

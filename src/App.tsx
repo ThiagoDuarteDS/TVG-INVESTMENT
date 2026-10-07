@@ -9,6 +9,7 @@ import { GoalsPlanningView } from './components/GoalsPlanningView';
 import { AICopilotView } from './components/AICopilotView';
 import { ScenarioSimulatorView } from './components/ScenarioSimulatorView';
 import { NewTransactionModal, OnboardingModal } from './components/GlobalModals';
+import { authService, UserProfile } from './services/authService';
 
 import {
   BankAccount,
@@ -20,101 +21,117 @@ import {
   SmartNotification,
 } from './types';
 
-import {
-  INITIAL_BANKS,
-  INITIAL_INCOMES,
-  INITIAL_EXPENSES,
-  INITIAL_GOALS,
-  INITIAL_TRANSACTIONS,
-  INITIAL_NOTIFICATIONS,
-} from './data/initialData';
-
 export default function App() {
-  // Navigation State - Login is now the mandatory initial page (Requirement 2 & 5)
+  // Navigation State - Login é a tela inicial mandatória
   const [currentTab, setCurrentTab] = useState<string>('login');
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(true);
-  const [userProfile, setUserProfile] = useState<{ name: string; email: string }>({
-    name: 'Thiago G.',
-    email: 'thiago007.org@gmail.com',
-  });
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isInitializingAuth, setIsInitializingAuth] = useState<boolean>(true);
 
-  // App Data State with LocalStorage Persistence
-  const [banks, setBanks] = useState<BankAccount[]>(() => {
-    const saved = localStorage.getItem('tvg_banks');
-    if (!saved) return INITIAL_BANKS;
-    try {
-      const parsed: BankAccount[] = JSON.parse(saved);
-      // Ensure official bank logos are always applied even if old session was cached
-      return parsed.map((b) => {
-        const initialMatch = INITIAL_BANKS.find(
-          (ib) => ib.id === b.id || ib.name.toLowerCase().includes(b.name.toLowerCase().slice(0, 4))
-        );
-        return {
-          ...b,
-          logo: initialMatch ? initialMatch.logo : b.logo,
-          color: initialMatch ? initialMatch.color : b.color,
-        };
-      });
-    } catch {
-      return INITIAL_BANKS;
-    }
-  });
-
-  const [incomes, setIncomes] = useState<IncomeCategory[]>(() => {
-    const saved = localStorage.getItem('tvg_incomes');
-    return saved ? JSON.parse(saved) : INITIAL_INCOMES;
-  });
-
-  const [expenses, setExpenses] = useState<ExpenseCategory[]>(() => {
-    const saved = localStorage.getItem('tvg_expenses');
-    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
-  });
-
-  const [goals, setGoals] = useState<FinancialGoal[]>(() => {
-    const saved = localStorage.getItem('tvg_goals');
-    return saved ? JSON.parse(saved) : INITIAL_GOALS;
-  });
-
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('tvg_transactions');
-    return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
-  });
-
-  const [notifications, setNotifications] = useState<SmartNotification[]>(() => {
-    const saved = localStorage.getItem('tvg_notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-  });
+  // Estados Financeiros Isolados por Usuário
+  const [banks, setBanks] = useState<BankAccount[]>([]);
+  const [incomes, setIncomes] = useState<IncomeCategory[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseCategory[]>([]);
+  const [goals, setGoals] = useState<FinancialGoal[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [notifications, setNotifications] = useState<SmartNotification[]>([]);
 
   // Modal Visibility States
   const [isNewTxModalOpen, setIsNewTxModalOpen] = useState(false);
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
 
-  // Sync to LocalStorage
+  // Inicialização da Sessão do Usuário
   useEffect(() => {
-    localStorage.setItem('tvg_banks', JSON.stringify(banks));
-  }, [banks]);
+    async function checkSession() {
+      try {
+        const session = await authService.getMe();
+        if (session && session.user) {
+          setUserProfile(session.user);
+          if (session.data) {
+            setBanks(session.data.banks || []);
+            setIncomes(session.data.incomes || []);
+            setExpenses(session.data.expenses || []);
+            setGoals(session.data.goals || []);
+            setTransactions(session.data.transactions || []);
+            setNotifications(session.data.notifications || []);
+          }
+          setCurrentTab('dashboard');
+        } else {
+          setUserProfile(null);
+          setCurrentTab('login');
+        }
+      } catch (err) {
+        console.warn('Erro ao restaurar sessão:', err);
+        setUserProfile(null);
+        setCurrentTab('login');
+      } finally {
+        setIsInitializingAuth(false);
+      }
+    }
+    checkSession();
+  }, []);
 
+  // Sincronização automática para o banco de dados individual do usuário autenticado
   useEffect(() => {
-    localStorage.setItem('tvg_incomes', JSON.stringify(incomes));
-  }, [incomes]);
+    if (!userProfile || isInitializingAuth) return;
+    authService.syncUserData(userProfile.id, {
+      banks,
+      incomes,
+      expenses,
+      goals,
+      transactions,
+      notifications,
+    });
+  }, [userProfile, banks, incomes, expenses, goals, transactions, notifications, isInitializingAuth]);
 
-  useEffect(() => {
-    localStorage.setItem('tvg_expenses', JSON.stringify(expenses));
-  }, [expenses]);
+  // Handler de Login com Sucesso
+  const handleLoginSuccess = (profile: UserProfile, data?: any) => {
+    setUserProfile(profile);
+    setBanks(data?.banks || []);
+    setIncomes(data?.incomes || []);
+    setExpenses(data?.expenses || []);
+    setGoals(data?.goals || []);
+    setTransactions(data?.transactions || []);
+    setNotifications(data?.notifications || []);
+    setCurrentTab('dashboard');
+  };
 
-  useEffect(() => {
-    localStorage.setItem('tvg_goals', JSON.stringify(goals));
-  }, [goals]);
+  // Handler de Cadastro com Sucesso (Inicialização limpa e individual)
+  const handleRegisterSuccess = (profile: UserProfile, data?: any) => {
+    setUserProfile(profile);
+    setBanks(data?.banks || []);
+    setIncomes(data?.incomes || []);
+    setExpenses(data?.expenses || []);
+    setGoals(data?.goals || []);
+    setTransactions(data?.transactions || []);
+    setNotifications(
+      data?.notifications || [
+        {
+          id: `notif-${Date.now()}`,
+          type: 'achievement',
+          title: 'Bem-vindo à TVG INVESTMENT!',
+          description: 'Sua conta foi criada com segurança. Conecte sua primeira conta ou informe seus dados para começar.',
+          date: 'Agora',
+          read: false,
+        },
+      ]
+    );
+    setCurrentTab('dashboard');
+  };
 
-  useEffect(() => {
-    localStorage.setItem('tvg_transactions', JSON.stringify(transactions));
-  }, [transactions]);
+  // Handler de Logout Seguro (Limpeza total e retorno ao Login sem dados pré-preenchidos)
+  const handleLogout = async () => {
+    await authService.logout();
+    setUserProfile(null);
+    setBanks([]);
+    setIncomes([]);
+    setExpenses([]);
+    setGoals([]);
+    setTransactions([]);
+    setNotifications([]);
+    setCurrentTab('login');
+  };
 
-  useEffect(() => {
-    localStorage.setItem('tvg_notifications', JSON.stringify(notifications));
-  }, [notifications]);
-
-  // Aggregate Calculations
+  // Cálculos Agregados Dinâmicos do Usuário Conectado
   const totalIncome = incomes.reduce((acc, curr) => acc + curr.amount, 0);
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
   const availableCash = totalIncome - totalExpenses;
@@ -124,17 +141,29 @@ export default function App() {
   const totalInvestments = banks.reduce((acc, curr) => acc + (curr.investmentsTotal || 0), 0);
   const totalWealth = totalBankBalances + totalInvestments;
 
-  // Dynamic Financial Health Score Calculation
+  // Cálculo Dinâmico de Saúde Financeira
   const calculateHealthScore = (): FinancialHealthScore => {
-    let score = 50;
+    if (incomes.length === 0 && expenses.length === 0 && banks.length === 0) {
+      return {
+        score: 50,
+        level: 'Moderado',
+        savingsRate: 0,
+        fixedCommitmentRate: 0,
+        emergencyReserveMonths: 0,
+        investmentPace: 'Estável',
+        insights: [
+          'Cadastre suas primeiras receitas e despesas para gerar o diagnóstico.',
+          'Conecte suas contas via Open Finance para automação.',
+        ],
+      };
+    }
 
-    // Savings rate effect (up to +25 points)
+    let score = 50;
     if (savingsRate >= 30) score += 25;
     else if (savingsRate >= 20) score += 20;
     else if (savingsRate >= 10) score += 10;
-    else score -= 10;
+    else if (totalIncome > 0) score -= 10;
 
-    // Emergency reserve coverage (up to +25 points)
     const reserveGoal = goals.find((g) => g.category === 'reserva');
     const reserveMonths = totalExpenses > 0 ? (reserveGoal?.currentAmount || 0) / totalExpenses : 0;
     if (reserveMonths >= 6) score += 25;
@@ -154,20 +183,20 @@ export default function App() {
       score,
       level,
       savingsRate: parseFloat(savingsRate.toFixed(1)),
-      fixedCommitmentRate: totalIncome > 0 ? Math.round((2300 / totalIncome) * 100) : 30,
+      fixedCommitmentRate: totalIncome > 0 ? Math.round((totalExpenses / totalIncome) * 100) : 0,
       emergencyReserveMonths: parseFloat(reserveMonths.toFixed(1)),
-      investmentPace: 'Acelerado',
+      investmentPace: totalInvestments > 0 ? 'Acelerado' : 'Estável',
       insights: [
-        'Taxa de poupança acima de 25%',
-        'Reserva de emergência em estágio avançado',
-        'Diversificação de contas ativas',
+        `Taxa de poupança atual: ${savingsRate.toFixed(1)}%`,
+        reserveMonths >= 3 ? 'Reserva de emergência em patamar seguro' : 'Priorize a formação da reserva de emergência',
+        `${banks.length} instituições financeiras conectadas`,
       ],
     };
   };
 
   const healthScore = calculateHealthScore();
 
-  // Handlers
+  // Handlers de Ações Financeiras
   const handleAddTransaction = (newTxData: {
     description: string;
     amount: number;
@@ -183,7 +212,7 @@ export default function App() {
     };
     setTransactions((prev) => [newTx, ...prev]);
 
-    // Update corresponding bank balance
+    // Atualiza saldo do banco respectivo
     setBanks((prev) =>
       prev.map((b) => {
         if (b.name === newTxData.bankName) {
@@ -202,19 +231,18 @@ export default function App() {
       code: 'OPEN',
       logo: '🏛️',
       accountType: 'corrente',
-      balance: 1500.0,
+      balance: 1000.0,
       lastSync: 'Conectado agora',
       status: 'connected',
       color: '#10b981',
     };
     setBanks((prev) => [...prev, newBank]);
 
-    // Add smart notification
     const notif: SmartNotification = {
       id: `notif-${Date.now()}`,
       type: 'achievement',
       title: `${bankName} conectado com sucesso`,
-      description: 'Saldos e extrato sincronizados via Open Finance Brasil.',
+      description: 'Saldos sincronizados com segurança via Open Finance Brasil.',
       date: 'Agora',
       read: false,
     };
@@ -321,35 +349,22 @@ export default function App() {
     monthlyIncome: number;
     primaryGoal: string;
   }) => {
-    // Update main income with user input
-    setIncomes((prev) =>
-      prev.map((inc) =>
-        inc.category === 'salario' ? { ...inc, amount: data.monthlyIncome } : inc
-      )
-    );
-    setHasCompletedOnboarding(true);
+    handleAddIncome('Salário / Renda Principal', data.monthlyIncome, 'salario');
+    setIsOnboardingModalOpen(false);
     setCurrentTab('dashboard');
   };
 
-  // 1. Mandatory Initial Screen: Login (Requirements 2, 3, 4 & 5)
-  if (currentTab === 'login') {
+  // 1. TELA INICIAL OBRIGATÓRIA: LOGIN (se não autenticado ou modo login)
+  if (currentTab === 'login' || !userProfile) {
     return (
       <LoginView
-        onLoginSuccess={(profile) => {
-          if (profile) {
-            setUserProfile((prev) => ({ ...prev, ...profile }));
-          }
-          setCurrentTab('dashboard');
-        }}
-        onRegisterSuccess={(profile) => {
-          setUserProfile({ name: profile.name, email: profile.email });
-          setCurrentTab('dashboard');
-        }}
+        onLoginSuccess={handleLoginSuccess}
+        onRegisterSuccess={handleRegisterSuccess}
       />
     );
   }
 
-  // If user is on landing page presentation
+  // Visualização de Landing Page institucional opcional
   if (currentTab === 'landing') {
     return (
       <>
@@ -376,12 +391,12 @@ export default function App() {
         availableCash={availableCash}
         healthScore={healthScore.score}
         notifications={notifications}
-        userProfile={userProfile}
+        userProfile={userProfile || { name: 'Usuário', email: '' }}
         onOpenNewTransaction={() => setIsNewTxModalOpen(true)}
         onOpenNewGoal={() => setCurrentTab('goals')}
         onOpenConnectBank={() => setCurrentTab('banks')}
         onOpenLanding={() => setCurrentTab('landing')}
-        onLogout={() => setCurrentTab('login')}
+        onLogout={handleLogout}
         onMarkNotificationsRead={() =>
           setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
         }
@@ -452,7 +467,6 @@ export default function App() {
             currentExpenses={totalExpenses}
             goals={goals}
             onApplyScenario={(additionalSavings) => {
-              // Apply small optimization
               alert(
                 `Cenário simulado com sucesso! Uma economia extra estimada de R$ ${additionalSavings.toLocaleString(
                   'pt-BR'
